@@ -10,6 +10,8 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9100'
         SONAR_PROJECT_KEY = 'library-management-system'
         MAVEN_OPTS = '-Xmx1024m'
+        JAVA_HOME = "/usr/lib/jvm/java-11-openjdk-amd64"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     options {

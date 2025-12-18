@@ -3,17 +3,17 @@ pipeline {
 
     tools {
         maven 'M3'
-        jdk 'JDK11'
+        // jdk 'JDK11'  <-- supprimer ou commenter
     }
 
     environment {
+        JAVA_HOME = "/usr/lib/jvm/java-11-openjdk-amd64"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
         SONAR_HOST_URL = 'http://localhost:9100'
         SONAR_PROJECT_KEY = 'library-management-system'
         MAVEN_OPTS = '-Xmx1024m'
-        JAVA_HOME = "/usr/lib/jvm/java-11-openjdk-amd64"
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
-
+    
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
@@ -21,10 +21,9 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
-                echo ' Récupération du code source'
+                echo '📥 Récupération du code source'
                 checkout scm
             }
         }
@@ -58,9 +57,7 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            when {
-                branch 'main'
-            }
+            when { branch 'main' }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
@@ -77,9 +74,7 @@ pipeline {
         }
 
         stage('Quality Gate') {
-            when {
-                branch 'main'
-            }
+            when { branch 'main' }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -95,9 +90,7 @@ pipeline {
         }
 
         stage('Deploy (Local)') {
-            when {
-                branch 'main'
-            }
+            when { branch 'main' }
             steps {
                 sh 'cp target/*.jar /tmp/library-management-system.jar'
             }
@@ -105,14 +98,9 @@ pipeline {
     }
 
     post {
-        success {
-            echo ' PIPELINE CI/CD RÉUSSI'
-        }
-        failure {
-            echo ' PIPELINE CI/CD ÉCHOUÉ'
-        }
-        always {
-            cleanWs()
-        }
+        success { echo '🎉 PIPELINE CI/CD RÉUSSI' }
+        failure { echo '❌ PIPELINE CI/CD ÉCHOUÉ' }
+        always { cleanWs() }
     }
 }
+

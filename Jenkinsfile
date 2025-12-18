@@ -16,14 +16,13 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
-        ansiColor('xterm')
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                echo '📥 Récupération du code source'
+                echo ' Récupération du code source'
                 checkout scm
             }
         }
@@ -43,7 +42,7 @@ pipeline {
 
         stage('Code Coverage (JaCoCo)') {
             steps {
-                echo '📊 Génération du rapport de couverture'
+                echo '📊 Génération du rapport JaCoCo'
                 sh 'mvn jacoco:report'
                 publishHTML(target: [
                     reportName: 'JaCoCo Coverage',
@@ -53,36 +52,33 @@ pipeline {
                     alwaysLinkToLastBuild: true,
                     allowMissing: false
                 ])
-                archiveArtifacts artifacts: 'target/site/jacoco/**', fingerprint: true
             }
         }
 
-stage('SonarQube Analysis') {
-    when {
-        branch 'main'
-    }
-    steps {
-        withSonarQubeEnv('SonarQube') {
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                sh """
-                    mvn sonar:sonar \
-                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                    -Dsonar.login=$SONAR_TOKEN \
-                    -Dsonar.coverage.exclusions=**/model/**,**/dto/**
-                """
+        stage('SonarQube Analysis') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.login=$SONAR_TOKEN \
+                            -Dsonar.coverage.exclusions=**/model/**,**/dto/**
+                        """
+                    }
+                }
             }
         }
-    }
-}
-
 
         stage('Quality Gate') {
             when {
                 branch 'main'
             }
             steps {
-                echo '🚦 Vérification du Quality Gate'
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -91,7 +87,6 @@ stage('SonarQube Analysis') {
 
         stage('Package') {
             steps {
-                echo '📦 Packaging de l’application'
                 sh 'mvn clean package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
@@ -102,11 +97,7 @@ stage('SonarQube Analysis') {
                 branch 'main'
             }
             steps {
-                echo ' Déploiement local'
-                sh '''
-                    cp target/*.jar /tmp/library-management-system.jar
-                    echo "Application copiée dans /tmp/"
-                '''
+                sh 'cp target/*.jar /tmp/library-management-system.jar'
             }
         }
     }
@@ -116,7 +107,7 @@ stage('SonarQube Analysis') {
             echo ' PIPELINE CI/CD RÉUSSI'
         }
         failure {
-            echo '❌ PIPELINE CI/CD ÉCHOUÉ'
+            echo ' PIPELINE CI/CD ÉCHOUÉ'
         }
         always {
             cleanWs()
